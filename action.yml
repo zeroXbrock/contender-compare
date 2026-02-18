@@ -4,17 +4,17 @@ inputs:
   contender_bin:
     description: 'Path to the contender binary.'
     required: true
-  binary_main:
+  node_main_bin:
     description: 'Path to the main branch node binary.'
     required: true
-  binary_main_args:
+  node_main_args:
     description: 'Arguments to pass to the main branch node binary.'
     required: false
     default: ''
-  binary_pr:
+  node_pr_bin:
     description: 'Path to the PR branch node binary.'
     required: true
-  binary_pr_args:
+  node_pr_args:
     description: 'Arguments to pass to the PR branch node binary.'
     required: false
     default: ''
@@ -28,7 +28,7 @@ runs:
         ./entrypoint.sh "$INPUT_CONTENDER_BIN" "$INPUT_BINARY_MAIN" "$INPUT_BINARY_MAIN_ARGS" "$INPUT_BINARY_PR" "$INPUT_BINARY_PR_ARGS"
       env:
         INPUT_CONTENDER_BIN: ${{ inputs.contender_bin }}
-        INPUT_BINARY_MAIN: ${{ inputs.binary_main }}
-        INPUT_BINARY_MAIN_ARGS: ${{ inputs.binary_main_args }}
-        INPUT_BINARY_PR: ${{ inputs.binary_pr }}
-        INPUT_BINARY_PR_ARGS: ${{ inputs.binary_pr_args }}
+        INPUT_BINARY_MAIN: ${{ inputs.node_main_bin }}
+        INPUT_BINARY_MAIN_ARGS: ${{ inputs.node_main_args }}
+        INPUT_BINARY_PR: ${{ inputs.node_pr_bin }}
+        INPUT_BINARY_PR_ARGS: ${{ inputs.node_pr_args }}
