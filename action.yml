@@ -1,0 +1,34 @@
+name: 'Contender Compare'
+description: 'Runs flashbots/contender against two user-specified node binaries.'
+inputs:
+  contender_bin:
+    description: 'Path to the contender binary.'
+    required: true
+  binary_main:
+    description: 'Path to the main branch node binary.'
+    required: true
+  binary_main_args:
+    description: 'Arguments to pass to the main branch node binary.'
+    required: false
+    default: ''
+  binary_pr:
+    description: 'Path to the PR branch node binary.'
+    required: true
+  binary_pr_args:
+    description: 'Arguments to pass to the PR branch node binary.'
+    required: false
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - name: Run contender compare
+      shell: bash
+      run: |
+        chmod +x ./entrypoint.sh
+        ./entrypoint.sh "$INPUT_CONTENDER_BIN" "$INPUT_BINARY_MAIN" "$INPUT_BINARY_MAIN_ARGS" "$INPUT_BINARY_PR" "$INPUT_BINARY_PR_ARGS"
+      env:
+        INPUT_CONTENDER_BIN: ${{ inputs.contender_bin }}
+        INPUT_BINARY_MAIN: ${{ inputs.binary_main }}
+        INPUT_BINARY_MAIN_ARGS: ${{ inputs.binary_main_args }}
+        INPUT_BINARY_PR: ${{ inputs.binary_pr }}
+        INPUT_BINARY_PR_ARGS: ${{ inputs.binary_pr_args }}
