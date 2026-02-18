@@ -18,17 +18,28 @@ inputs:
     description: 'Arguments to pass to the PR branch node binary.'
     required: false
     default: ''
+  rpc_main:
+    description: "RPC URL of the main branch's EL node."
+    required: false
+    default: 'http://localhost:8545'
+  rpc_pr:
+    description: "RPC URL of the PR branch's EL node."
+    required: false
+    default: 'http://localhost:9545'
 runs:
   using: 'composite'
   steps:
-    - name: Run contender compare
+    - name: Run contender-compare
       shell: bash
       run: |
+        # problem: $RPC_MAIN and $RPC_PR need to be defined for the script to run
         chmod +x ./entrypoint.sh
-        ./entrypoint.sh "$INPUT_CONTENDER_BIN" "$INPUT_BINARY_MAIN" "$INPUT_BINARY_MAIN_ARGS" "$INPUT_BINARY_PR" "$INPUT_BINARY_PR_ARGS"
+        ./entrypoint.sh "$INPUT_CONTENDER_BIN" "$INPUT_BINARY_MAIN" "$INPUT_BINARY_MAIN_ARGS" "$INPUT_BINARY_PR" "$INPUT_BINARY_PR_ARGS" "$RPC_MAIN" "$RPC_PR"
       env:
         INPUT_CONTENDER_BIN: ${{ inputs.contender_bin }}
         INPUT_BINARY_MAIN: ${{ inputs.node_main_bin }}
         INPUT_BINARY_MAIN_ARGS: ${{ inputs.node_main_args }}
         INPUT_BINARY_PR: ${{ inputs.node_pr_bin }}
         INPUT_BINARY_PR_ARGS: ${{ inputs.node_pr_args }}
+        RPC_MAIN: ${{ inputs.rpc_main }}
+        RPC_PR: ${{ inputs.rpc_pr }}
