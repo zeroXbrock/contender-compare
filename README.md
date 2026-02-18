@@ -1,6 +1,6 @@
 # Contender Compare GitHub Action
 
-This action runs flashbots/contender against two user-specified node binaries.
+This action runs [contender](https://github.com/flashbots/contender) against two user-specified node binaries.
 
 ## Inputs
 - `contender_bin`: Path to the contender binary (required)
