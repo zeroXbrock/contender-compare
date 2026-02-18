@@ -1,5 +1,7 @@
 # Contender Compare GitHub Action
 
+> WIP; don't use
+
 This action runs [contender](https://github.com/flashbots/contender) against two user-specified node binaries.
 
 ## Inputs
