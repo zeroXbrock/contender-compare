@@ -25,16 +25,17 @@ echo "rpc_pr: $rpc_pr"
 
 # Helper to start a node and get its PID
 start_node() {
-	local bin="$1"
-	local args="$2"
-	echo "Starting node: $bin $args"
-	"$bin" $args &
-	echo $!
+    local bin="$1"
+    local args="$2"
+    echo "Starting node: $bin $args"
+    "$bin" $args &
+    node_pid=$!
 }
 
 
 # Run contender against main node
-main_pid=$(start_node "$node_main_bin" "$node_main_args")
+start_node "$node_main_bin" "$node_main_args"
+main_pid=$node_pid
 echo "Started main node with PID $main_pid"
 sleep 5  # Give node time to start
 echo "Running contender against main node..."
@@ -46,7 +47,8 @@ echo "Main node stopped."
 
 
 # Run contender against PR node
-pr_pid=$(start_node "$node_pr_bin" "$node_pr_args")
+start_node "$node_pr_bin" "$node_pr_args"
+pr_pid=$node_pid
 echo "Started PR node with PID $pr_pid"
 sleep 5  # Give node time to start
 echo "Running contender against PR node..."
