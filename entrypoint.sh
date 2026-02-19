@@ -42,7 +42,7 @@ echo "Running contender against main node..."
 "$contender_bin" spam -r "$rpc_main" --tps 100 -d 5 fill-block
 echo "Killing main node (PID $main_pid)"
 kill $main_pid
-timeout 10s wait $main_pid 2>/dev/null || true
+wait $main_pid 2>/dev/null || true
 echo "Main node stopped."
 
 
@@ -55,7 +55,7 @@ echo "Running contender against PR node..."
 "$contender_bin" spam -r "$rpc_pr" --tps 100 -d 5 fill-block
 echo "Killing PR node (PID $pr_pid)"
 kill $pr_pid
-timeout 10s wait $pr_pid 2>/dev/null || true
+wait $pr_pid 2>/dev/null || true
 echo "PR node stopped."
 
 
