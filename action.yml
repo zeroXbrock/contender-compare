@@ -33,8 +33,8 @@ runs:
     - name: Run contender-compare
       shell: bash
       run: |
-        chmod +x ./entrypoint.sh
-        ./entrypoint.sh "$INPUT_CONTENDER_BIN" "$INPUT_BINARY_MAIN" "$INPUT_BINARY_MAIN_ARGS" "$INPUT_BINARY_PR" "$INPUT_BINARY_PR_ARGS" "$INPUT_RPC_MAIN" "$INPUT_RPC_PR"
+        chmod +x "${{ github.action_path }}/entrypoint.sh"
+        "${{ github.action_path }}/entrypoint.sh" "$INPUT_CONTENDER_BIN" "$INPUT_BINARY_MAIN" "$INPUT_BINARY_MAIN_ARGS" "$INPUT_BINARY_PR" "$INPUT_BINARY_PR_ARGS" "$INPUT_RPC_MAIN" "$INPUT_RPC_PR"
       env:
         INPUT_CONTENDER_BIN: ${{ inputs.contender_bin }}
         INPUT_BINARY_MAIN: ${{ inputs.node_main_bin }}
