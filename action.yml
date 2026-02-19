@@ -29,10 +29,12 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: foundry-rs/foundry-toolchain@v1
-    - name: Add Foundry to PATH
+    - name: Install Foundry
       shell: bash
-      run: echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+      run: |
+        curl -L https://foundry.paradigm.xyz | bash
+        ~/.foundry/bin/foundryup
+        echo "$HOME/.foundry/bin" >> $GITHUB_PATH
     - name: Run contender-compare
       shell: bash
       run: |
