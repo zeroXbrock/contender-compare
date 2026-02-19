@@ -29,6 +29,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - uses: foundry-rs/foundry-toolchain@v1
     - name: Run contender-compare
       shell: bash
       run: |
