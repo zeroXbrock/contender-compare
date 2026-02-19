@@ -30,6 +30,9 @@ runs:
   using: 'composite'
   steps:
     - uses: foundry-rs/foundry-toolchain@v1
+    - name: Add Foundry to PATH
+      shell: bash
+      run: echo "$HOME/.foundry/bin" >> $GITHUB_PATH
     - name: Run contender-compare
       shell: bash
       run: |
