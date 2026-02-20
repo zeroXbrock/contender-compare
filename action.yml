@@ -3,7 +3,8 @@ description: 'Runs flashbots/contender against two user-specified node binaries.
 inputs:
   contender_bin_main:
     description: 'Path to the contender binary.'
-    required: true
+    required: false
+    default: ''
   contender_bin_pr:
     description: 'Alternate contender binary; used for testing contender itself.'
     required: false
@@ -44,13 +45,27 @@ runs:
         curl -L https://foundry.paradigm.xyz | bash
         ~/.foundry/bin/foundryup
         echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+    - name: Download contender binary if not provided
+      shell: bash
+      run: |
+        if [ -z "${{ inputs.contender_bin_main }}" ]; then
+          echo "Downloading latest contender release..."
+            url=$(curl -s https://api.github.com/repos/flashbots/contender/releases/latest | grep browser_download_url | grep linux-x86_64 | cut -d '"' -f 4)
+            curl -L "$url" -o contender.tar.gz
+            tar -xzf contender.tar.gz
+            contender_path=$(find . -type f -name 'contender' -executable | head -n 1)
+            chmod +x "$contender_path"
+            echo "contender_bin_main=$(pwd)/$contender_path" >> $GITHUB_ENV
+        else
+          echo "contender_bin_main=${{ inputs.contender_bin_main }}" >> $GITHUB_ENV
+        fi
     - name: Run contender-compare
       shell: bash
       run: |
         chmod +x "${{ github.action_path }}/entrypoint.sh"
         "${{ github.action_path }}/entrypoint.sh"
       env:
-        INPUT_CONTENDER_BIN_MAIN: "${{ inputs.contender_bin_main }}"
+        INPUT_CONTENDER_BIN_MAIN: "${{ env.contender_bin_main }}"
         INPUT_CONTENDER_BIN_PR: "${{ inputs.contender_bin_pr }}"
         INPUT_NODE_BIN_MAIN: "${{ inputs.node_bin_main }}"
         INPUT_NODE_ARGS_MAIN: "${{ inputs.node_args_main }}"
