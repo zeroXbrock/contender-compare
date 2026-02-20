@@ -50,12 +50,12 @@ runs:
         chmod +x "${{ github.action_path }}/entrypoint.sh"
         "${{ github.action_path }}/entrypoint.sh"
       env:
-        INPUT_CONTENDER_BIN_MAIN: ${{ inputs.contender_bin_main }}
-        INPUT_CONTENDER_BIN_PR: ${{ inputs.contender_bin_pr }}
-        INPUT_NODE_BIN_MAIN: ${{ inputs.node_bin_main }}
-        INPUT_NODE_ARGS_MAIN: ${{ inputs.node_args_main }}
-        INPUT_NODE_BIN_PR: ${{ inputs.node_bin_pr }}
-        INPUT_NODE_ARGS_PR: ${{ inputs.node_args_pr }}
-        INPUT_RPC_MAIN: ${{ inputs.rpc_main }}
-        INPUT_RPC_PR: ${{ inputs.rpc_pr }}
+        INPUT_CONTENDER_BIN_MAIN: "${{ inputs.contender_bin_main }}"
+        INPUT_CONTENDER_BIN_PR: "${{ inputs.contender_bin_pr }}"
+        INPUT_NODE_BIN_MAIN: "${{ inputs.node_bin_main }}"
+        INPUT_NODE_ARGS_MAIN: "${{ inputs.node_args_main }}"
+        INPUT_NODE_BIN_PR: "${{ inputs.node_bin_pr }}"
+        INPUT_NODE_ARGS_PR: "${{ inputs.node_args_pr }}"
+        INPUT_RPC_MAIN: "${{ inputs.rpc_main }}"
+        INPUT_RPC_PR: "${{ inputs.rpc_pr }}"
         CONTENDER_SPAM_ARGS: "${{ inputs.contender_spam_args }}"
