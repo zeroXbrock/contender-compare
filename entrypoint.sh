@@ -42,7 +42,7 @@ main_pid=$node_pid
 echo "Started main node with PID $main_pid"
 sleep 5  # Give node time to start
 echo "Running contender against main node..."
-"$contender_bin" spam -r "$rpc_main" "$CONTENDER_SPAM_ARGS"
+"$contender_bin" spam -r "$rpc_main" $CONTENDER_SPAM_ARGS
 echo "Killing main node (PID $main_pid)"
 kill $main_pid
 wait $main_pid 2>/dev/null || true
@@ -55,7 +55,7 @@ pr_pid=$node_pid
 echo "Started PR node with PID $pr_pid"
 sleep 5  # Give node time to start
 echo "Running contender against PR node..."
-"$contender_bin" spam -r "$rpc_pr" "$CONTENDER_SPAM_ARGS"
+"$contender_bin" spam -r "$rpc_pr" $CONTENDER_SPAM_ARGS
 echo "Killing PR node (PID $pr_pid)"
 kill $pr_pid
 wait $pr_pid 2>/dev/null || true
