@@ -23,8 +23,8 @@ echo "rpc_pr: $rpc_pr"
 # Set default CONTENDER_SPAM_ARGS if not already set
 if [ -z "$CONTENDER_SPAM_ARGS" ]; then
     CONTENDER_SPAM_ARGS='--tps 100 -d 5 fill-block'
-	echo "using default spam args: '$CONTENDER_SPAM_ARGS'"
 fi
+echo "contender spam args: '$CONTENDER_SPAM_ARGS'"
 
 # Helper to start a node and get its PID
 start_node() {
