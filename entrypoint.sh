@@ -3,8 +3,6 @@
 set -e
 set -x
 
-
-
 # Inputs
 contender_bin="$1"
 node_main_bin="$2"
@@ -25,6 +23,7 @@ echo "rpc_pr: $rpc_pr"
 # Set default CONTENDER_SPAM_ARGS if not already set
 if [ -z "$CONTENDER_SPAM_ARGS" ]; then
     CONTENDER_SPAM_ARGS='--tps 100 -d 5 fill-block'
+	echo "using default spam args: '$CONTENDER_SPAM_ARGS'"
 fi
 
 # Helper to start a node and get its PID

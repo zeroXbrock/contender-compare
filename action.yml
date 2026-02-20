@@ -26,6 +26,10 @@ inputs:
     description: "RPC URL of the PR branch's EL node."
     required: false
     default: 'http://localhost:9545'
+  contender_spam_args:
+    description: "Raw args to pass to 'contender spam'"
+    required: false
+    default: '--tps 100 -d 5 erc20'
 runs:
   using: 'composite'
   steps:
@@ -48,3 +52,4 @@ runs:
         INPUT_BINARY_PR_ARGS: ${{ inputs.node_pr_args }}
         INPUT_RPC_MAIN: ${{ inputs.rpc_main }}
         INPUT_RPC_PR: ${{ inputs.rpc_pr }}
+        CONTENDER_SPAM_ARGS: "${{ inputs.contender_spam_args }}"
