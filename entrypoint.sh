@@ -2,14 +2,14 @@
 set -e
 set -x
 
-# Inputs
-contender_bin="$1"
-node_main_bin="$2"
-node_main_args="$3"
-node_pr_bin="$4"
-node_pr_args="$5"
-rpc_main="$6"
-rpc_pr="$7"
+# Inputs from environment variables
+contender_bin="$INPUT_CONTENDER_BIN"
+node_main_bin="$INPUT_BINARY_MAIN"
+node_main_args="$INPUT_BINARY_MAIN_ARGS"
+node_pr_bin="$INPUT_BINARY_PR"
+node_pr_args="$INPUT_BINARY_PR_ARGS"
+rpc_main="$INPUT_RPC_MAIN"
+rpc_pr="$INPUT_RPC_PR"
 
 echo "contender_bin: $contender_bin"
 echo "node_main_bin: $node_main_bin"
