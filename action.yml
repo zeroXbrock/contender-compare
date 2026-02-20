@@ -50,12 +50,12 @@ runs:
       run: |
         if [ -z "${{ inputs.contender_bin_main }}" ]; then
           echo "Downloading latest contender release..."
-            url=$(curl -s https://api.github.com/repos/flashbots/contender/releases/latest | grep browser_download_url | grep linux-x86_64 | cut -d '"' -f 4)
-            curl -L "$url" -o contender.tar.gz
-            tar -xzf contender.tar.gz
-            contender_path=$(find . -type f -name 'contender' -executable | head -n 1)
-            chmod +x "$contender_path"
-            echo "contender_bin_main=$(pwd)/$contender_path" >> $GITHUB_ENV
+          url=$(curl -s https://api.github.com/repos/flashbots/contender/releases/latest | grep browser_download_url | grep x86_64-unknown-linux | cut -d '"' -f 4 | head -n 1)
+          curl -L "$url" -o contender.tar.gz
+          tar -xzf contender.tar.gz
+          contender_path=$(find . -type f -name 'contender' -executable | head -n 1)
+          chmod +x "$contender_path"
+          echo "contender_bin_main=$(pwd)/$contender_path" >> $GITHUB_ENV
         else
           echo "contender_bin_main=${{ inputs.contender_bin_main }}" >> $GITHUB_ENV
         fi
