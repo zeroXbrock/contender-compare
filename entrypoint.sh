@@ -3,19 +3,19 @@ set -e
 set -x
 
 # Inputs from environment variables
-contender_bin="$INPUT_CONTENDER_BIN"
-node_main_bin="$INPUT_BINARY_MAIN"
-node_main_args="$INPUT_BINARY_MAIN_ARGS"
-node_pr_bin="$INPUT_BINARY_PR"
-node_pr_args="$INPUT_BINARY_PR_ARGS"
+contender_bin_main="$INPUT_CONTENDER_BIN"
+node_bin_main="$INPUT_BINARY_MAIN"
+node_args_main="$INPUT_BINARY_MAIN_ARGS"
+node_bin_pr="$INPUT_BINARY_PR"
+node_args_pr="$INPUT_BINARY_PR_ARGS"
 rpc_main="$INPUT_RPC_MAIN"
 rpc_pr="$INPUT_RPC_PR"
 
-echo "contender_bin: $contender_bin"
-echo "node_main_bin: $node_main_bin"
-echo "node_main_args: $node_main_args"
-echo "node_pr_bin: $node_pr_bin"
-echo "node_pr_args: $node_pr_args"
+echo "contender_bin_main: $contender_bin_main"
+echo "node_bin_main: $node_bin_main"
+echo "node_args_main: $node_args_main"
+echo "node_bin_pr: $node_bin_pr"
+echo "node_args_pr: $node_args_pr"
 echo "rpc_main: $rpc_main"
 echo "rpc_pr: $rpc_pr"
 
@@ -42,19 +42,19 @@ start_node() {
 }
 
 # Run contender against main node
-start_node "$node_main_bin" "$node_main_args"
+start_node "$node_bin_main" "$node_args_main"
 main_pid=$node_pid
 echo "Started main node with PID $main_pid"
 sleep 5  # Give node time to start
 echo "Running contender against main node..."
-"$contender_bin" spam -r "$rpc_main" $CONTENDER_SPAM_ARGS
+"$contender_bin_main" spam -r "$rpc_main" $CONTENDER_SPAM_ARGS
 echo "Killing main node (PID $main_pid)"
 kill $main_pid
 wait $main_pid 2>/dev/null || true
 echo "Main node stopped."
 
 # Run contender against PR node
-start_node "$node_pr_bin" "$node_pr_args"
+start_node "$node_bin_pr" "$node_args_pr"
 pr_pid=$node_pid
 echo "Started PR node with PID $pr_pid"
 sleep 5  # Give node time to start

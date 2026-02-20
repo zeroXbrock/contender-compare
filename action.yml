@@ -1,7 +1,7 @@
 name: 'Contender Compare'
 description: 'Runs flashbots/contender against two user-specified node binaries.'
 inputs:
-  contender_bin:
+  contender_bin_main:
     description: 'Path to the contender binary.'
     required: true
   contender_bin_pr:
@@ -12,17 +12,17 @@ inputs:
     description: "Raw args to pass to 'contender spam'"
     required: false
     default: '--tps 100 -d 5 erc20'
-  node_main_bin:
+  node_bin_main:
     description: 'Path to the main branch node binary.'
     required: true
-  node_main_args:
+  node_args_main:
     description: 'Arguments to pass to the main branch node binary.'
     required: false
     default: ''
-  node_pr_bin:
+  node_bin_pr:
     description: 'Path to the PR branch node binary.'
     required: true
-  node_pr_args:
+  node_args_pr:
     description: 'Arguments to pass to the PR branch node binary.'
     required: false
     default: ''
@@ -50,12 +50,12 @@ runs:
         chmod +x "${{ github.action_path }}/entrypoint.sh"
         "${{ github.action_path }}/entrypoint.sh"
       env:
-        INPUT_CONTENDER_BIN: ${{ inputs.contender_bin }}
+        INPUT_CONTENDER_BIN: ${{ inputs.contender_bin_main }}
         INPUT_CONTENDER_BIN_PR: ${{ inputs.contender_bin_pr }}
-        INPUT_BINARY_MAIN: ${{ inputs.node_main_bin }}
-        INPUT_BINARY_MAIN_ARGS: ${{ inputs.node_main_args }}
-        INPUT_BINARY_PR: ${{ inputs.node_pr_bin }}
-        INPUT_BINARY_PR_ARGS: ${{ inputs.node_pr_args }}
+        INPUT_BINARY_MAIN: ${{ inputs.node_bin_main }}
+        INPUT_BINARY_MAIN_ARGS: ${{ inputs.node_args_main }}
+        INPUT_BINARY_PR: ${{ inputs.node_bin_pr }}
+        INPUT_BINARY_PR_ARGS: ${{ inputs.node_args_pr }}
         INPUT_RPC_MAIN: ${{ inputs.rpc_main }}
         INPUT_RPC_PR: ${{ inputs.rpc_pr }}
         CONTENDER_SPAM_ARGS: "${{ inputs.contender_spam_args }}"
