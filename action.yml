@@ -4,6 +4,14 @@ inputs:
   contender_bin:
     description: 'Path to the contender binary.'
     required: true
+  contender_bin_pr:
+    description: 'Alternate contender binary; used for testing contender itself.'
+    required: false
+    default: ''
+  contender_spam_args:
+    description: "Raw args to pass to 'contender spam'"
+    required: false
+    default: '--tps 100 -d 5 erc20'
   node_main_bin:
     description: 'Path to the main branch node binary.'
     required: true
@@ -26,10 +34,7 @@ inputs:
     description: "RPC URL of the PR branch's EL node."
     required: false
     default: 'http://localhost:9545'
-  contender_spam_args:
-    description: "Raw args to pass to 'contender spam'"
-    required: false
-    default: '--tps 100 -d 5 erc20'
+
 runs:
   using: 'composite'
   steps:
@@ -46,6 +51,7 @@ runs:
         "${{ github.action_path }}/entrypoint.sh"
       env:
         INPUT_CONTENDER_BIN: ${{ inputs.contender_bin }}
+        INPUT_CONTENDER_BIN_PR: ${{ inputs.contender_bin_pr }}
         INPUT_BINARY_MAIN: ${{ inputs.node_main_bin }}
         INPUT_BINARY_MAIN_ARGS: ${{ inputs.node_main_args }}
         INPUT_BINARY_PR: ${{ inputs.node_pr_bin }}

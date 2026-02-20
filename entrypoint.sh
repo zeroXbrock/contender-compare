@@ -25,6 +25,13 @@ if [ -z "$CONTENDER_SPAM_ARGS" ]; then
 fi
 echo "contender spam args: '$CONTENDER_SPAM_ARGS'"
 
+# assign alternate contender bin if given, otherwise use same contender for both runs
+if [ -z "$INPUT_CONTENDER_BIN_PR" ]; then
+	contender_bin_pr="$INPUT_CONTENDER_BIN"
+else
+	contender_bin_pr="$INPUT_CONTENDER_BIN_PR"
+fi
+
 # Helper to start a node and get its PID
 start_node() {
     local bin="$1"
@@ -52,7 +59,7 @@ pr_pid=$node_pid
 echo "Started PR node with PID $pr_pid"
 sleep 5  # Give node time to start
 echo "Running contender against PR node..."
-"$contender_bin" spam -r "$rpc_pr" $CONTENDER_SPAM_ARGS
+"$contender_bin_pr" spam -r "$rpc_pr" $CONTENDER_SPAM_ARGS
 echo "Killing PR node (PID $pr_pid)"
 kill $pr_pid
 wait $pr_pid 2>/dev/null || true
