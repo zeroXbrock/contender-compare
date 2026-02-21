@@ -39,12 +39,14 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    # - name: Install Foundry
+    #   shell: bash
+    #   run: |
+    #     curl -L https://foundry.paradigm.xyz | bash
+    #     ~/.foundry/bin/foundryup
+    #     echo "$HOME/.foundry/bin" >> $GITHUB_PATH
     - name: Install Foundry
-      shell: bash
-      run: |
-        curl -L https://foundry.paradigm.xyz | bash
-        ~/.foundry/bin/foundryup
-        echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+      uses: foundry-rs/foundry-toolchain@v1
     - name: Download contender binary if not provided
       shell: bash
       run: |
