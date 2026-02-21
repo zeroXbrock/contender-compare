@@ -74,3 +74,36 @@ runs:
         INPUT_RPC_MAIN: "${{ inputs.rpc_main }}"
         INPUT_RPC_PR: "${{ inputs.rpc_pr }}"
         CONTENDER_SPAM_ARGS: "${{ inputs.contender_spam_args }}"
+
+    - uses: actions/github-script@v7
+      with:
+        script: |
+          const pr = context.payload.pull_request;
+          if (!pr) core.setFailed("Not a PR context");
+
+          const header = "<!-- contender-compare-report -->"; // sentinel
+          const body = `${header}\n## Contender Report\n... your JSON → formatted ...`;
+
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: pr.number,
+          });
+
+          const existing = comments.find(c => c.body?.includes(header));
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body,
+            });
+          }
