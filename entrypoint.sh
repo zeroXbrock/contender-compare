@@ -32,6 +32,12 @@ start_node() {
     node_pid=$!
 }
 
+getset_run_id() {
+    local node_bin="$1"
+    local run_id_output=$("$node_bin" admin latest-run-id)
+    run_id=$(tail -n 1)
+}
+
 # run main node
 start_node "$INPUT_NODE_BIN_MAIN" "$INPUT_NODE_ARGS_MAIN"
 main_pid=$node_pid
@@ -43,7 +49,7 @@ echo "Running contender against main node..."
 "$INPUT_CONTENDER_BIN_MAIN" spam -r "$INPUT_RPC_MAIN" $CONTENDER_SPAM_ARGS
 
 # generate A report
-run_id=$("$INPUT_CONTENDER_BIN_MAIN" admin latest-run-id)
+getset_run_id "$INPUT_CONTENDER_BIN_MAIN"
 "$INPUT_CONTENDER_BIN_MAIN" report -f json
 report_a_path="$HOME/.contender/reports/report-$run_id-$run_id.json"
 
@@ -64,7 +70,7 @@ echo "Running contender against PR node..."
 "$contender_bin_pr" spam -r "$INPUT_RPC_PR" $CONTENDER_SPAM_ARGS
 
 # generate B report
-run_id=$("$contender_bin_pr" admin latest-run-id)
+getset_run_id "$contender_bin_pr"
 "$contender_bin_pr" report -f json
 report_b_path="$HOME/.contender/reports/report-$run_id-$run_id.json"
 
