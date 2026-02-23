@@ -34,8 +34,7 @@ start_node() {
 
 getset_run_id() {
     local node_bin="$1"
-    local run_id_output=$("$node_bin" admin latest-run-id)
-    run_id=$(tail -n 1)
+    run_id=$("$node_bin" admin latest-run-id | tail -n 1)
 }
 
 # run main node
