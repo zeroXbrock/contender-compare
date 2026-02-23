@@ -45,7 +45,7 @@ echo "Running contender against main node..."
 # generate A report
 run_id=$("$INPUT_CONTENDER_BIN_MAIN" admin latest-run-id)
 "$INPUT_CONTENDER_BIN_MAIN" report -f json
-report_a="$HOME/.contender/reports/report-$run_id-$run_id.json"
+report_a_path="$HOME/.contender/reports/report-$run_id-$run_id.json"
 
 # kill main node
 echo "Killing main node (PID $main_pid)"
@@ -66,7 +66,7 @@ echo "Running contender against PR node..."
 # generate B report
 run_id=$("$contender_bin_pr" admin latest-run-id)
 "$contender_bin_pr" report -f json
-report_b="$HOME/.contender/reports/report-$run_id-$run_id.json"
+report_b_path="$HOME/.contender/reports/report-$run_id-$run_id.json"
 
 # kill PR node
 echo "Killing PR node (PID $pr_pid)"
@@ -74,4 +74,7 @@ kill $pr_pid
 wait $pr_pid 2>/dev/null || true
 echo "PR node stopped."
 
-# TODO: post report summaries in PR
+# export reports to GH output for use in next steps
+report_a=$(cat $report_a_path)
+report_b=$(cat $report_b_path)
+echo "reports_json=\"{\"report_a\": $report_a, \"report_b\": $report_b}\"" >> "$GITHUB_OUTPUT"
