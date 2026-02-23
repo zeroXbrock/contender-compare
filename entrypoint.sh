@@ -77,4 +77,4 @@ echo "PR node stopped."
 # export reports to GH output for use in next steps
 report_a=$(cat $report_a_path)
 report_b=$(cat $report_b_path)
-echo "reports_json=\"{\"report_a\": $report_a, \"report_b\": $report_b}\"" >> "$GITHUB_OUTPUT"
+printf 'reports_json=%s\n' "{\"report_a\": $report_a, \"report_b\": $report_b}" >> "$GITHUB_OUTPUT"
