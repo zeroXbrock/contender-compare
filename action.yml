@@ -214,30 +214,23 @@ runs:
             },
           };
 
-          // 3. Pending txs over time (normalize to relative seconds)
+          // 3. Pending txs over time (scatter plot with relative timestamps)
           const aTs = a.chart_data.pending_txs?.timestamps || [];
           const bTs = b.chart_data.pending_txs?.timestamps || [];
           const aPending = a.chart_data.pending_txs?.pending_txs || [];
           const bPending = b.chart_data.pending_txs?.pending_txs || [];
           const aStart = aTs[0] || 0;
           const bStart = bTs[0] || 0;
-          const maxDur = Math.max(
-            aTs.length ? aTs[aTs.length - 1] - aStart : 0,
-            bTs.length ? bTs[bTs.length - 1] - bStart : 0);
-          const pendingLabels = Array.from({ length: maxDur + 1 }, (_, i) => String(i));
-          const aPendArr = new Array(maxDur + 1).fill(null);
-          const bPendArr = new Array(maxDur + 1).fill(null);
-          aTs.forEach((t, i) => { aPendArr[t - aStart] = aPending[i]; });
-          bTs.forEach((t, i) => { bPendArr[t - bStart] = bPending[i]; });
+          const aPoints = aTs.map((t, i) => ({ x: t - aStart, y: aPending[i] }));
+          const bPoints = bTs.map((t, i) => ({ x: t - bStart, y: bPending[i] }));
           const pendingChart = {
-            type: 'line',
+            type: 'scatter',
             data: {
-              labels: pendingLabels,
               datasets: [
-                { label: 'Main', data: aPendArr, borderColor: MAIN_BORDER,
-                  backgroundColor: 'rgba(54,162,235,0.1)', fill: true, spanGaps: true, pointRadius: 2 },
-                { label: 'PR', data: bPendArr, borderColor: PR_BORDER,
-                  backgroundColor: 'rgba(255,99,132,0.1)', fill: true, spanGaps: true, pointRadius: 2 },
+                { label: 'Main', data: aPoints, borderColor: MAIN_BORDER,
+                  backgroundColor: 'rgba(54,162,235,0.1)', showLine: true, fill: true, pointRadius: 2 },
+                { label: 'PR', data: bPoints, borderColor: PR_BORDER,
+                  backgroundColor: 'rgba(255,99,132,0.1)', showLine: true, fill: true, pointRadius: 2 },
               ],
             },
             options: {
