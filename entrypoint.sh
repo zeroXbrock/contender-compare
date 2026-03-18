@@ -80,6 +80,10 @@ wait $pr_pid 2>/dev/null || true
 echo "PR node stopped."
 
 # export reports to GH output for use in next steps
-report_a=$(cat $report_a_path)
-report_b=$(cat $report_b_path)
-printf 'reports_json=%s\n' "{\"report_a\": $report_a, \"report_b\": $report_b}" >> "$GITHUB_OUTPUT"
+report_a=$(cat "$report_a_path")
+report_b=$(cat "$report_b_path")
+{
+  echo 'reports_json<<EOF'
+  printf '{"report_a": %s, "report_b": %s}\n' "$report_a" "$report_b"
+  echo 'EOF'
+} >> "$GITHUB_OUTPUT"
