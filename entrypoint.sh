@@ -23,6 +23,26 @@ else
     contender_bin_pr="$INPUT_CONTENDER_BIN_PR"
 fi
 
+# wait for an RPC endpoint to become healthy
+wait_for_rpc() {
+    local rpc_url="$1"
+    local max_attempts="${2:-30}"
+    local delay="${3:-1}"
+    echo "Waiting for RPC endpoint $rpc_url to become healthy..."
+    for ((i=1; i<=max_attempts; i++)); do
+        if curl -s -X POST -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}' \
+            "$rpc_url" 2>/dev/null | grep -q '"result"'; then
+            echo "RPC endpoint $rpc_url is healthy (attempt $i/$max_attempts)."
+            return 0
+        fi
+        echo "  attempt $i/$max_attempts — not ready yet, retrying in ${delay}s..."
+        sleep "$delay"
+    done
+    echo "ERROR: RPC endpoint $rpc_url did not become healthy after $max_attempts attempts."
+    return 1
+}
+
 # start a node and get its PID
 start_node() {
     local bin="$1"
@@ -41,7 +61,7 @@ getset_run_id() {
 start_node "$INPUT_NODE_BIN_MAIN" "$INPUT_NODE_ARGS_MAIN"
 main_pid=$node_pid
 echo "Started main node with PID $main_pid"
-sleep 5  # Give node time to start
+wait_for_rpc "$INPUT_RPC_MAIN"
 
 # spam main node w/ contender
 echo "Running contender against main node..."
@@ -62,7 +82,7 @@ echo "Main node stopped."
 start_node "$INPUT_NODE_BIN_PR" "$INPUT_NODE_ARGS_PR"
 pr_pid=$node_pid
 echo "Started PR node with PID $pr_pid"
-sleep 5  # Give node time to start
+wait_for_rpc "$INPUT_RPC_PR"
 
 # spam PR node w/ contender
 echo "Running contender against PR node..."
