@@ -99,11 +99,8 @@ kill $pr_pid
 wait $pr_pid 2>/dev/null || true
 echo "PR node stopped."
 
-# export reports to GH output for use in next steps
-report_a=$(cat "$report_a_path")
-report_b=$(cat "$report_b_path")
-{
-  echo 'reports_json<<EOF'
-  printf '{"report_a": %s, "report_b": %s}\n' "$report_a" "$report_b"
-  echo 'EOF'
-} >> "$GITHUB_OUTPUT"
+# export reports as a file path (avoids OS arg-list-too-long for large reports)
+reports_file="$(mktemp)"
+jq -n --slurpfile a "$report_a_path" --slurpfile b "$report_b_path" \
+  '{report_a: $a[0], report_b: $b[0]}' > "$reports_file"
+echo "reports_file=$reports_file" >> "$GITHUB_OUTPUT"
