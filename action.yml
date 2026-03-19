@@ -86,7 +86,7 @@ runs:
         script: |
           const fs = require('fs');
           const pr = context.payload.pull_request;
-          if (!pr) { core.setFailed("Not a PR context"); return; }
+          if (!pr) { echo "not a PR context, skipping report post"; return; }
 
           const reports = JSON.parse(fs.readFileSync(process.env.REPORTS_FILE, 'utf8'));
           const a = reports.report_a;
