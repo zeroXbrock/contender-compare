@@ -1,5 +1,9 @@
 name: 'Contender Compare'
 description: 'Runs flashbots/contender against two user-specified node binaries.'
+outputs:
+  reports_file:
+    description: "Path to combined contender reports JSON file"
+    value: ${{ steps.run-contender-compare.outputs.reports_file }}
 inputs:
   contender_bin_main:
     description: 'Path to the contender binary.'
@@ -40,11 +44,8 @@ runs:
   using: 'composite'
   steps:
     - name: Install Foundry
-      shell: bash
-      run: |
-        curl -L https://foundry.paradigm.xyz | bash
-        ~/.foundry/bin/foundryup
-        echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+      uses: foundry-rs/foundry-toolchain@v1
+
     - name: Download contender binary if not provided
       shell: bash
       run: |
@@ -59,7 +60,9 @@ runs:
         else
           echo "contender_bin_main=${{ inputs.contender_bin_main }}" >> $GITHUB_ENV
         fi
+
     - name: Run contender-compare
+      id: run-contender-compare
       shell: bash
       run: |
         chmod +x "${{ github.action_path }}/entrypoint.sh"
@@ -74,3 +77,254 @@ runs:
         INPUT_RPC_MAIN: "${{ inputs.rpc_main }}"
         INPUT_RPC_PR: "${{ inputs.rpc_pr }}"
         CONTENDER_SPAM_ARGS: "${{ inputs.contender_spam_args }}"
+
+    - name: Post comparison report
+      uses: actions/github-script@v7
+      env:
+        REPORTS_FILE: ${{ steps.run-contender-compare.outputs.reports_file }}
+      with:
+        script: |
+          const fs = require('fs');
+          const pr = context.payload.pull_request;
+          if (!pr) { console.log("not a PR, skipping PR post"); return; }
+
+          const reports = JSON.parse(fs.readFileSync(process.env.REPORTS_FILE, 'utf8'));
+          const a = reports.report_a;
+          const b = reports.report_b;
+          if (!a || !b) { core.setFailed("Missing report_a or report_b"); return; }
+
+          // --- Helpers ---
+          function delta(va, vb) {
+            if (!va && !vb) return '—';
+            if (!va) return 'N/A';
+            const pct = ((vb - va) / Math.abs(va) * 100).toFixed(1);
+            return (pct > 0 ? '+' : '') + pct + '%';
+          }
+
+          function num(n, decimals) {
+            if (typeof n !== 'number') return String(n);
+            if (decimals !== undefined) return n.toFixed(decimals);
+            return n % 1 === 0 ? String(n) : n.toFixed(3);
+          }
+
+          async function createChartUrl(config) {
+            const resp = await fetch('https://quickchart.io/chart/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                backgroundColor: '#ffffff',
+                width: 800,
+                height: 400,
+                chart: config,
+              }),
+            });
+            const json = await resp.json();
+            if (!json.success) { console.error('quickchart.io error:', json); return null; }
+            return json.url;
+          }
+
+          // --- Summary Metrics Table ---
+          const metricsRows = [
+            ['Peak Gas', a.metrics.peak_gas.value, b.metrics.peak_gas.value],
+            ['Peak Tx Count', a.metrics.peak_tx_count.value, b.metrics.peak_tx_count.value],
+            ['Avg Block Time (s)',
+              parseFloat(num(a.metrics.average_block_time_secs.value, 3)),
+              parseFloat(num(b.metrics.average_block_time_secs.value, 3))],
+          ];
+          const metricsTable = [
+            '| Metric | Main | PR | Delta |',
+            '|--------|-----:|---:|------:|',
+            ...metricsRows.map(([name, va, vb]) =>
+              `| ${name} | ${num(va)} | ${num(vb)} | ${delta(va, vb)} |`),
+          ].join('\n');
+
+          // --- RPC Latency Quantiles Table ---
+          const methodsA = new Map((a.metrics.latency_quantiles || []).map(q => [q.method, q]));
+          const methodsB = new Map((b.metrics.latency_quantiles || []).map(q => [q.method, q]));
+          const allMethods = [...new Set([...methodsA.keys(), ...methodsB.keys()])].sort();
+          const latencyTable = [
+            '| Method | Main p50 | PR p50 | Main p90 | PR p90 | Main p99 | PR p99 |',
+            '|--------|-------:|------:|-------:|------:|-------:|------:|',
+            ...allMethods.map(m => {
+              const qa = methodsA.get(m) || { p50: '—', p90: '—', p99: '—' };
+              const qb = methodsB.get(m) || { p50: '—', p90: '—', p99: '—' };
+              return `| \`${m}\` | ${qa.p50} | ${qb.p50} | ${qa.p90} | ${qb.p90} | ${qa.p99} | ${qb.p99} |`;
+            }),
+          ].join('\n');
+
+          // --- sendRawTransaction Quantiles Table ---
+          const srtA = a.chart_data.latency_data_sendrawtransaction?.quantiles;
+          const srtB = b.chart_data.latency_data_sendrawtransaction?.quantiles;
+          const srtTable = (srtA && srtB) ? [
+            '| Quantile | Main (ms) | PR (ms) | Delta |',
+            '|----------|----------:|--------:|------:|',
+            ...['p50', 'p90', 'p99'].map(p =>
+              `| ${p} | ${num(srtA[p], 2)} | ${num(srtB[p], 2)} | ${delta(srtA[p], srtB[p])} |`),
+          ].join('\n') : '';
+
+          // --- Chart Configs (Chart.js v2 — quickchart.io default) ---
+          const MAIN_BG = 'rgba(54,162,235,0.6)';
+          const PR_BG   = 'rgba(255,99,132,0.6)';
+          const MAIN_BORDER = 'rgba(54,162,235,1)';
+          const PR_BORDER   = 'rgba(255,99,132,1)';
+
+          // 1. Gas per block (normalized to relative block index)
+          const maxBlocks = Math.max(
+            a.chart_data.gas_per_block.blocks.length,
+            b.chart_data.gas_per_block.blocks.length);
+          const blockLabels = Array.from({ length: maxBlocks }, (_, i) => String(i + 1));
+          const gasChart = {
+            type: 'bar',
+            data: {
+              labels: blockLabels,
+              datasets: [
+                { label: 'Main', data: a.chart_data.gas_per_block.gas_used,
+                  backgroundColor: MAIN_BG, borderColor: MAIN_BORDER, borderWidth: 1 },
+                { label: 'PR', data: b.chart_data.gas_per_block.gas_used,
+                  backgroundColor: PR_BG, borderColor: PR_BORDER, borderWidth: 1 },
+              ],
+            },
+            options: {
+              title: { display: true, text: 'Gas Used Per Block' },
+              scales: {
+                yAxes: [{ ticks: { beginAtZero: true }, scaleLabel: { display: true, labelString: 'Gas' } }],
+                xAxes: [{ scaleLabel: { display: true, labelString: 'Block # (relative)' } }],
+              },
+            },
+          };
+
+          // 2. Time to inclusion
+          const ttiBucketsA = a.chart_data.time_to_inclusion?.buckets || [];
+          const ttiBucketsB = b.chart_data.time_to_inclusion?.buckets || [];
+          const ttiBuckets = ttiBucketsA.length >= ttiBucketsB.length ? ttiBucketsA : ttiBucketsB;
+          const ttiChart = {
+            type: 'bar',
+            data: {
+              labels: ttiBuckets,
+              datasets: [
+                { label: 'Main', data: a.chart_data.time_to_inclusion?.counts || [], backgroundColor: MAIN_BG },
+                { label: 'PR', data: b.chart_data.time_to_inclusion?.counts || [], backgroundColor: PR_BG },
+              ],
+            },
+            options: {
+              title: { display: true, text: 'Time to Inclusion' },
+              scales: {
+                yAxes: [{ ticks: { beginAtZero: true }, scaleLabel: { display: true, labelString: 'Tx Count' } }],
+              },
+            },
+          };
+
+          // 3. Pending txs over time (scatter plot with relative timestamps)
+          const aTs = a.chart_data.pending_txs?.timestamps || [];
+          const bTs = b.chart_data.pending_txs?.timestamps || [];
+          const aPending = a.chart_data.pending_txs?.pending_txs || [];
+          const bPending = b.chart_data.pending_txs?.pending_txs || [];
+          const aStart = aTs[0] || 0;
+          const bStart = bTs[0] || 0;
+          const aPoints = aTs.map((t, i) => ({ x: t - aStart, y: aPending[i] }));
+          const bPoints = bTs.map((t, i) => ({ x: t - bStart, y: bPending[i] }));
+          const pendingChart = {
+            type: 'scatter',
+            data: {
+              datasets: [
+                { label: 'Main', data: aPoints, borderColor: MAIN_BORDER,
+                  backgroundColor: 'rgba(54,162,235,0.1)', showLine: true, fill: true, pointRadius: 2 },
+                { label: 'PR', data: bPoints, borderColor: PR_BORDER,
+                  backgroundColor: 'rgba(255,99,132,0.1)', showLine: true, fill: true, pointRadius: 2 },
+              ],
+            },
+            options: {
+              title: { display: true, text: 'Pending Transactions Over Time' },
+              scales: {
+                yAxes: [{ ticks: { beginAtZero: true }, scaleLabel: { display: true, labelString: 'Pending Txs' } }],
+                xAxes: [{ scaleLabel: { display: true, labelString: 'Seconds' } }],
+              },
+            },
+          };
+
+          // 4. sendRawTransaction latency distribution
+          const srtBuckets = a.chart_data.latency_data_sendrawtransaction?.buckets
+            || b.chart_data.latency_data_sendrawtransaction?.buckets || [];
+          const srtChart = {
+            type: 'bar',
+            data: {
+              labels: srtBuckets,
+              datasets: [
+                { label: 'Main', data: a.chart_data.latency_data_sendrawtransaction?.counts || [], backgroundColor: MAIN_BG },
+                { label: 'PR', data: b.chart_data.latency_data_sendrawtransaction?.counts || [], backgroundColor: PR_BG },
+              ],
+            },
+            options: {
+              title: { display: true, text: 'eth_sendRawTransaction Latency (ms)' },
+              scales: {
+                yAxes: [{ ticks: { beginAtZero: true }, scaleLabel: { display: true, labelString: 'Count' } }],
+              },
+            },
+          };
+
+          // Create all chart images in parallel via quickchart.io
+          const [gasUrl, ttiUrl, pendingUrl, srtUrl] = await Promise.all([
+            createChartUrl(gasChart),
+            createChartUrl(ttiChart),
+            createChartUrl(pendingChart),
+            createChartUrl(srtChart),
+          ]);
+
+          // --- Build Comment Body ---
+          const sentinel = "<!-- contender-compare-report -->";
+          const chartImg = (alt, url) => url ? `![${alt}](${url})` : '_Chart unavailable_';
+
+          const body = `${sentinel}
+          ## Contender Compare Report
+
+          | | Main | PR |
+          |---|---|---|
+          | **Contender** | ${a.version} | ${b.version} |
+          | **Scenario** | ${a.scenario_name} | ${b.scenario_name} |
+          | **Blocks** | ${a.start_block}–${a.end_block} | ${b.start_block}–${b.end_block} |
+
+          ### Metrics
+
+          ${metricsTable}
+
+          ### Gas Used Per Block
+          ${chartImg('Gas Per Block', gasUrl)}
+
+          ### Time to Inclusion
+          ${chartImg('Time to Inclusion', ttiUrl)}
+
+          ### Pending Transactions
+          ${chartImg('Pending Txs', pendingUrl)}
+
+          ### eth_sendRawTransaction Latency
+          ${chartImg('Latency Distribution', srtUrl)}
+          ${srtTable ? '\n#### Quantiles\n\n' + srtTable : ''}
+
+          ### RPC Latency Quantiles (ms)
+
+          ${latencyTable}
+          `.replace(/^          /gm, '');
+
+          // --- Post or Update PR Comment ---
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: pr.number,
+          });
+          const existing = comments.find(c => c.body?.includes(sentinel));
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body,
+            });
+          }

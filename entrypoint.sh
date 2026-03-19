@@ -23,7 +23,27 @@ else
     contender_bin_pr="$INPUT_CONTENDER_BIN_PR"
 fi
 
-# Helper to start a node and get its PID
+# wait for an RPC endpoint to become healthy
+wait_for_rpc() {
+    local rpc_url="$1"
+    local max_attempts="${2:-30}"
+    local delay="${3:-1}"
+    echo "Waiting for RPC endpoint $rpc_url to become healthy..."
+    for ((i=1; i<=max_attempts; i++)); do
+        if curl -s -X POST -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}' \
+            "$rpc_url" 2>/dev/null | grep -q '"result"'; then
+            echo "RPC endpoint $rpc_url is healthy (attempt $i/$max_attempts)."
+            return 0
+        fi
+        echo "  attempt $i/$max_attempts — not ready yet, retrying in ${delay}s..."
+        sleep "$delay"
+    done
+    echo "ERROR: RPC endpoint $rpc_url did not become healthy after $max_attempts attempts."
+    return 1
+}
+
+# start a node and get its PID
 start_node() {
     local bin="$1"
     local args="$2"
@@ -32,26 +52,55 @@ start_node() {
     node_pid=$!
 }
 
-# Run contender against main node
+getset_run_id() {
+    local node_bin="$1"
+    run_id=$("$node_bin" admin latest-run-id | tail -n 1)
+}
+
+# run main node
 start_node "$INPUT_NODE_BIN_MAIN" "$INPUT_NODE_ARGS_MAIN"
 main_pid=$node_pid
 echo "Started main node with PID $main_pid"
-sleep 5  # Give node time to start
+wait_for_rpc "$INPUT_RPC_MAIN"
+
+# spam main node w/ contender
 echo "Running contender against main node..."
 "$INPUT_CONTENDER_BIN_MAIN" spam -r "$INPUT_RPC_MAIN" $CONTENDER_SPAM_ARGS
+
+# generate A report
+getset_run_id "$INPUT_CONTENDER_BIN_MAIN"
+"$INPUT_CONTENDER_BIN_MAIN" report -f json
+report_a_path="$HOME/.contender/reports/report-$run_id-$run_id.json"
+
+# kill main node
 echo "Killing main node (PID $main_pid)"
 kill $main_pid
 wait $main_pid 2>/dev/null || true
 echo "Main node stopped."
 
-# Run contender against PR node
+# run PR node
 start_node "$INPUT_NODE_BIN_PR" "$INPUT_NODE_ARGS_PR"
 pr_pid=$node_pid
 echo "Started PR node with PID $pr_pid"
-sleep 5  # Give node time to start
+wait_for_rpc "$INPUT_RPC_PR"
+
+# spam PR node w/ contender
 echo "Running contender against PR node..."
 "$contender_bin_pr" spam -r "$INPUT_RPC_PR" $CONTENDER_SPAM_ARGS
+
+# generate B report
+getset_run_id "$contender_bin_pr"
+"$contender_bin_pr" report -f json
+report_b_path="$HOME/.contender/reports/report-$run_id-$run_id.json"
+
+# kill PR node
 echo "Killing PR node (PID $pr_pid)"
 kill $pr_pid
 wait $pr_pid 2>/dev/null || true
 echo "PR node stopped."
+
+# export reports as a file path (avoids OS arg-list-too-long for large reports)
+reports_file="$(mktemp)"
+jq -n --slurpfile a "$report_a_path" --slurpfile b "$report_b_path" \
+  '{report_a: $a[0], report_b: $b[0]}' > "$reports_file"
+echo "reports_file=$reports_file" >> "$GITHUB_OUTPUT"
